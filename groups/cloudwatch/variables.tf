@@ -20,7 +20,7 @@ variable "aws_profile" {
 # ------------------------------------------------------------------------------
 # Service configuration
 # ------------------------------------------------------------------------------
-variable "service_name" {
-  type        = string
-  description = "The user friendly service name used to name AWS resources."
-}
+# variable "service_name" {
+#   type        = string
+#   description = "The user friendly service name used to name AWS resources."
+# }
