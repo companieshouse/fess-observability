@@ -1,0 +1,189 @@
+{
+    "widgets": [
+        {
+            "type": "text",
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 4,
+            "properties": {
+                "markdown": "[Cluster Console](https://${region}.console.aws.amazon.com/ecs/v2/clusters/${cluster_name}/services?region=${region}) | [Service Console](https://${region}.console.aws.amazon.com/ecs/v2/clusters/${cluster_name}/services/${service_name}/health?region=${region})\n\nTask Size: ${task_cpu} CPU units | ${task_memory} MiB%{ for container in container_definitions ~}%{ if strcontains(try(container.logConfiguration.options["awslogs-group"], ""), "/eric/") ~}\n\nEric Size: ${try(container.cpu, "not set")} CPU units | ${try(container.memory, try(container.memoryReservation, "not set"))} MiB%{ endif ~}%{ endfor ~}\n\n---\n\n${join(" | ", [for log_group_name in log_group_names : format("[%s Logs](https://%s.console.aws.amazon.com/cloudwatch/home?region=%s#logsV2:log-groups/log-group/%s)", strcontains(log_group_name, "/eric/") ? "Eric" : "Service", region, region, replace(log_group_name, "/", "$252F"))])}"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 0,
+            "width": 12,
+            "height": 4,
+            "properties": {
+                "metrics": [
+                    [ "ECS/ContainerInsights", "PendingTaskCount", "ServiceName", "${service_name}", "ClusterName", "${cluster_name}", { "region": "${region}", "label": "Pending Tasks" } ],
+                    [ "ECS/ContainerInsights", "RunningTaskCount", "ServiceName", "${service_name}", "ClusterName", "${cluster_name}", { "region": "${region}", "label": "Running Tasks" } ],
+                    [ "ECS/ContainerInsights", "DeploymentCount", "ServiceName", "${service_name}", "ClusterName", "${cluster_name}", { "region": "${region}", "label": "Deployments" } ]
+                ],
+                "period": 300,
+                "region": "${region}",
+                "sparkline": true,
+                "stat": "Maximum",
+                "title": "Service State",
+                "view": "singleValue"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 5,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "${service_name}", "ClusterName", "${cluster_name}", { "region": "${region}", "id": "m1", "label": "Minimum", "stat": "Minimum" } ],
+                    [ "...", { "region": "${region}", "id": "m2", "label": "Maximum" } ],
+                    [ "...", { "region": "${region}", "id": "m3", "label": "Average", "stat": "Average" } ]
+                ],
+                "period": 300,
+                "region": "${region}",
+                "stacked": false,
+                "title": "CPU Utilisation",
+                "view": "timeSeries",
+                "stat": "Maximum"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 4,
+            "width": 12,
+            "height": 5,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "MemoryUtilization", "ServiceName", "${service_name}", "ClusterName", "${cluster_name}", { "region": "${region}", "label": "Minimum", "stat": "Minimum" } ],
+                    [ "...", { "region": "${region}", "label": "Maximum" } ],
+                    [ "...", { "region": "${region}", "label": "Average", "stat": "Average" } ]
+                ],
+                "region": "${region}",
+                "stacked": false,
+                "title": "Memory Utilisation",
+                "view": "timeSeries",
+                "period": 300,
+                "stat": "Maximum"
+            }
+        }%{ for index, target_group in target_groups ~},
+        {
+            "type": "text",
+            "x": 0,
+            "y": ${9 + index * 6},
+            "width": 24,
+            "height": 1,
+            "properties": {
+                "markdown": "## Load Balancer: ${target_group.load_balancer_arn_suffix} | Target Group: ${target_group.name}",
+                "background": "transparent"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": ${10 + index * 6},
+            "width": 12,
+            "height": 5,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ApplicationELB", "RequestCount", "TargetGroup", "${target_group.arn_suffix}", "LoadBalancer", "${target_group.load_balancer_arn_suffix}", { "region": "${region}", "id": "m1", "visible": false } ],
+                    [ ".", "HTTPCode_Target_2XX_Count", ".", ".", ".", ".", { "region": "${region}", "id": "m2", "label": "Target_2XX_Count" } ],
+                    [ ".", "HTTPCode_Target_3XX_Count", ".", ".", ".", ".", { "region": "${region}", "id": "m3", "label": "Target_3XX_Count" } ],
+                    [ ".", "HTTPCode_Target_4XX_Count", ".", ".", ".", ".", { "region": "${region}", "id": "m4", "label": "Target_4XX_Count" } ],
+                    [ ".", "HTTPCode_Target_5XX_Count", ".", ".", ".", ".", { "region": "${region}", "id": "m5", "label": "Target_5XX_Count" } ]
+                ],
+                "period": 300,
+                "region": "${region}",
+                "stacked": true,
+                "stat": "Sum",
+                "title": "Requests",
+                "view": "timeSeries",
+                "yAxis": {
+                    "left": {
+                        "showUnits": false,
+                        "label": ""
+                    }
+                },
+                "setPeriodToTimeRange": true
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": ${10 + index * 6},
+            "width": 12,
+            "height": 5,
+            "properties": {
+                "metrics": [
+                    [ "AWS/ApplicationELB", "TargetResponseTime", "TargetGroup", "${target_group.arn_suffix}", "LoadBalancer", "${target_group.load_balancer_arn_suffix}", { "region": "${region}", "label": "TargetResponseTime" } ]
+                ],
+                "period": 300,
+                "region": "${region}",
+                "stacked": false,
+                "title": "Target Response Time",
+                "view": "timeSeries",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                },
+                "stat": "Average"
+            }
+        }%{ endfor ~},
+        {
+            "type": "text",
+            "x": 0,
+            "y": ${9 + length(target_groups) * 6},
+            "width": 24,
+            "height": 1,
+            "properties": {
+                "markdown": "## Service Reliability",
+                "background": "transparent"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": ${10 + length(target_groups) * 6},
+            "width": 24,
+            "height": 4,
+            "properties": {
+                "metrics": [
+%{ for target_index, target_group in target_groups ~}
+                    [ "AWS/ApplicationELB", "RequestCount", "TargetGroup", "${target_group.arn_suffix}", "LoadBalancer", "${target_group.load_balancer_arn_suffix}", { "region": "${region}", "id": "requests_${target_index}", "visible": false, "stat": "Sum" } ],
+                    [ ".", "HTTPCode_Target_5XX_Count", ".", ".", ".", ".", { "region": "${region}", "id": "errors_${target_index}", "visible": false, "stat": "Sum" } ],
+                    [ "AWS/ApplicationELB", "TargetResponseTime", "TargetGroup", "${target_group.arn_suffix}", "LoadBalancer", "${target_group.load_balancer_arn_suffix}", { "region": "${region}", "id": "p95_${target_index}", "stat": "p95", "label": "${target_group.name} p95 latency (s)" } ],
+%{ endfor ~}
+                    [ { "expression": "${join("+", [for index, target_group in target_groups : format("requests_%s", index)])}", "id": "request_total", "visible": false } ],
+                    [ { "expression": "${join("+", [for index, target_group in target_groups : format("errors_%s", index)])}", "id": "error_total", "visible": false } ],
+                    [ { "expression": "FLOOR((100 * ((request_total - error_total) / request_total)) * 100) / 100", "label": "Availability (%)", "id": "availability" } ],
+                    [ { "expression": "FLOOR(100 * (error_total / request_total)) / 100", "label": "Error rate (%)", "id": "error_rate" } ],
+                    [ { "expression": "FLOOR(request_total / PERIOD(request_total) * 100) / 100", "label": "Request rate (req/s)", "id": "request_rate" } ]
+                ],
+                "sparkline": true,
+                "view": "singleValue",
+                "region": "${region}",
+                "period": 300,
+                "title": "Service Reliability",
+                "singleValueFullPrecision": true,
+                "liveData": false
+            }
+        },
+        {
+            "type": "log",
+            "x": 0,
+            "y": ${15 + length(target_groups) * 6},
+            "width": 24,
+            "height": 7,
+            "properties": {
+                "region": "${region}",
+                "view": "timeSeries",
+                "title": "Log events by severity",
+                "query": "%{ for index, log_group_arn in log_group_arns ~} SOURCE \"${log_group_arn}\"%{ if index == 0 } | %{ endif }%{ endfor ~} | stats count(event) as events by bin(5m), event"
+            }
+        }
+    ]
+}
