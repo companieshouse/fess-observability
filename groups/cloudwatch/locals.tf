@@ -13,16 +13,32 @@ locals {
       cluster = "filing-close"
     },
     {
-      name = "advanced-company-search-consumer"
+      name    = "advanced-company-search-consumer"
       cluster = "search-service"
     },
     {
-      name = "auth-code-notification"
+      name    = "auth-code-notification"
       cluster = "search-service"
     },
     {
-      name = "chs-streaming-api"
+      name    = "chs-streaming-api"
       cluster = "streaming"
+    },
+    {
+      name    = "strike-off-objections-api"
+      cluster = "company-requests"
+    },
+    {
+      name    = "strike-off-objections-web"
+      cluster = "company-requests"
+    },
+    {
+      name    = "strike-off-partner-objections-api"
+      cluster = "company-requests"
+    },
+    {
+      name    = "strike-off-partner-objections-processor"
+      cluster = "company-requests"
     }
   ]
 
@@ -39,5 +55,24 @@ locals {
       for name in log_group_names :
       data.aws_cloudwatch_log_group.service_logs[name].arn
     ]
+  }
+
+  service_alarm_target_groups = {
+    for service_name, service in data.aws_ecs_service.services : service_name => [
+      for target_group_arn in toset([
+        for load_balancer in service.load_balancer : load_balancer.target_group_arn
+        if load_balancer.target_group_arn != null && load_balancer.target_group_arn != ""
+        ]) : {
+        arn_suffix = data.aws_lb_target_group.service_target_groups[target_group_arn].arn_suffix
+        load_balancer_arn_suffix = split(
+          ":loadbalancer/",
+          one(data.aws_lb_target_group.service_target_groups[target_group_arn].load_balancer_arns)
+        )[1]
+      }
+    ]
+    if length([
+      for load_balancer in service.load_balancer : load_balancer.target_group_arn
+      if load_balancer.target_group_arn != null && load_balancer.target_group_arn != ""
+    ]) > 0
   }
 }
