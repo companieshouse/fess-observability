@@ -1,4 +1,13 @@
 locals {
+  vault_secret_path = "applications/${var.aws_profile}/${var.environment}/observability-dashboard"
+
+  xmatters_webhook_url = format(
+    "https://%s%s&groups=%s",
+    var.xmatters_host,
+    jsondecode(data.vault_generic_secret.secrets.data_json).xmatters_endpoint,
+    var.xmatters_group
+  )
+
   service_configs = [
     {
       name    = "dissolution-api"

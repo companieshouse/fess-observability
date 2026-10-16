@@ -33,3 +33,7 @@ data "aws_cloudwatch_log_group" "service_logs" {
 
   name = each.value
 }
+
+data "vault_generic_secret" "secrets" {
+  path = local.vault_secret_path
+}

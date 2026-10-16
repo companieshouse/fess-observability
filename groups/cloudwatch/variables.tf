@@ -53,3 +53,19 @@ variable "cloudwatch_alarm_ok_actions" {
   default     = []
   description = "CloudWatch alarm action ARNs for recovery notifications."
 }
+
+# ------------------------------------------------------------------------------
+# Xmatters configuration
+# ------------------------------------------------------------------------------
+
+variable "xmatters_host" {
+  type        = string
+  default     = "companieshouse.xmatters.com"
+  description = "The Xmatters host for constructing the webhook URL."
+}
+
+variable "xmatters_group" {
+  type        = string
+  default     = "testgroup"
+  description = "The Xmatters group to notify via the webhook."
+}

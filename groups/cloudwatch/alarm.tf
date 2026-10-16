@@ -1,3 +1,13 @@
+resource "aws_sns_topic" "observability_alerts" {
+  name = "fess-observability-${var.environment}-alerts"
+}
+
+resource "aws_sns_topic_subscription" "alarm_email" {
+  topic_arn = aws_sns_topic.observability_alerts.arn
+  protocol  = "https"
+  endpoint  = local.xmatters_webhook_url
+}
+
 resource "aws_cloudwatch_metric_alarm" "availability" {
   for_each = local.service_alarm_target_groups
 
@@ -8,7 +18,7 @@ resource "aws_cloudwatch_metric_alarm" "availability" {
   threshold           = var.availability_alarm_threshold
   alarm_description   = format("Service availability is below %.2f%% for %s.", var.availability_alarm_threshold, each.key)
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.cloudwatch_alarm_actions
+  alarm_actions       = concat(var.cloudwatch_alarm_actions, [aws_sns_topic.observability_alerts.arn])
   ok_actions          = var.cloudwatch_alarm_ok_actions
 
   metric_query {
@@ -85,7 +95,7 @@ resource "aws_cloudwatch_metric_alarm" "error_rate" {
   threshold           = var.error_rate_alarm_threshold
   alarm_description   = format("Service target 5xx error rate is above %.2f%% for %s.", var.error_rate_alarm_threshold, each.key)
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.cloudwatch_alarm_actions
+  alarm_actions       = concat(var.cloudwatch_alarm_actions, [aws_sns_topic.observability_alerts.arn])
   ok_actions          = var.cloudwatch_alarm_ok_actions
 
   metric_query {
