@@ -94,11 +94,12 @@
                     [ ".", "HTTPCode_Target_5XX_Count", ".", ".", ".", ".", { "region": "${region}", "id": "errors_${target_index}", "visible": false, "stat": "Sum" } ],
                     [ "AWS/ApplicationELB", "TargetResponseTime", "TargetGroup", "${target_group.arn_suffix}", "LoadBalancer", "${target_group.load_balancer_arn_suffix}", { "region": "${region}", "id": "p95_${target_index}", "stat": "p95", "label": "${target_group.name} p95 latency (s)" } ],
 %{ endfor ~}
-                    [ { "expression": "${join("+", [for index, target_group in target_groups : format("requests_%s", index)])}", "id": "request_total", "visible": false } ],
-                    [ { "expression": "${join("+", [for index, target_group in target_groups : format("errors_%s", index)])}", "id": "error_total", "visible": false } ],
+                    
                     [ { "expression": "FLOOR((100 * ((request_total - error_total) / request_total)) * 100) / 100", "label": "Availability (%)", "id": "availability" } ],
                     [ { "expression": "FLOOR(100 * (error_total / request_total)) / 100", "label": "Error rate (%)", "id": "error_rate" } ],
-                    [ { "expression": "FLOOR(request_total / PERIOD(request_total) * 100) / 100", "label": "Request rate (req/s)", "id": "request_rate" } ]
+                    [ { "expression": "FLOOR(request_total / PERIOD(request_total) * 100) / 100", "label": "Request rate (req/s)", "id": "request_rate" } ],
+                    [ { "expression": "${join("+", [for index, target_group in target_groups : format("requests_%s", index)])}", "id": "request_total", "visible": false } ],
+                    [ { "expression": "${join("+", [for index, target_group in target_groups : format("errors_%s", index)])}", "id": "error_total", "visible": false } ]
                 ],
                 "sparkline": true,
                 "view": "singleValue",

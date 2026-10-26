@@ -48,8 +48,105 @@ locals {
     {
       name    = "strike-off-partner-objections-processor"
       cluster = "company-requests"
+    },
+    {
+      name    = "certified-copies-orders-api"
+      cluster = "order-service"
+    },
+    {
+      name    = "frontend-document-api"
+      cluster = "document"
+    },
+    {
+      name    = "backend-document-api"
+      cluster = "document"
+    },
+    {
+      name    = "emergency-auth-code-api"
+      cluster = "identity"
+    },
+    {
+      name = "authentication-service"
+      cluster = "identity"
+      slo = {
+        availability = {
+          enabled = true,
+          target  = 99.5,
+          period  = 60
+        }
+        latency = {
+          enabled = true,
+          target = 99.5,
+          period  = 60,
+          threshold = 0.5 # 500ms latency threshold
+        }
+      }
     }
   ]
+
+  service_slos = merge([
+    for service in local.service_configs : {
+      for kind, config in try(service.slo, {}) :
+      "${var.environment}-${service.name}-${kind}" => merge(config, {
+        service = service.name
+        kind    = kind
+      }) if try(config.enabled, false)
+    }
+  ]...)
+
+  slo_metrics = {
+    availability = {
+      requests = {
+        name       = "RequestCount"
+        stat       = "Sum"
+        expression = "SUM(METRICS(\"requests_\"))"
+      }
+      errors = {
+        name       = "HTTPCode_Target_5XX_Count"
+        stat       = "Sum"
+        expression = "SUM(METRICS(\"errors_\"))"
+      }
+    }
+    latency = {
+      latency = {
+        name       = "TargetResponseTime"
+        stat       = "p95"
+        expression = "MAX(METRICS(\"latency_\"))"
+      }
+    }
+  }
+
+  service_slo_queries = {
+    for key, slo in local.service_slos : key => {
+      for metric_id, metric in local.slo_metrics[slo.kind] : metric_id => concat(
+        [
+          for index, target in local.service_slo_target_groups[slo.service] : {
+            id          = "${metric_id}_${index}"
+            return_data = false
+            metric_stat = {
+              period = slo.period
+              stat   = metric.stat
+              metric = {
+                namespace   = "AWS/ApplicationELB"
+                metric_name = metric.name
+                dimensions = [
+                  { name = "LoadBalancer", value = target.load_balancer_arn_suffix },
+                  { name = "TargetGroup", value = target.arn_suffix }
+                ]
+              }
+            }
+          }
+        ],
+        [
+          {
+            id          = "${metric_id}_value"
+            expression  = metric.expression
+            return_data = true
+          }
+        ]
+      )
+    }
+  }
 
   service_log_group_names = {
     for service_name, task_definition in data.aws_ecs_task_definition.services : service_name => distinct([
@@ -66,7 +163,7 @@ locals {
     ]
   }
 
-  service_alarm_target_groups = {
+  service_slo_target_groups = {
     for service_name, service in data.aws_ecs_service.services : service_name => [
       for target_group_arn in toset([
         for load_balancer in service.load_balancer : load_balancer.target_group_arn
