@@ -26,9 +26,3 @@ variable "xmatters_host" {
   default     = "companieshouse.xmatters.com"
   description = "The Xmatters host for constructing the webhook URL."
 }
-
-variable "xmatters_group" {
-  type        = string
-  default     = "testgroup"
-  description = "The Xmatters group to notify via the webhook."
-}

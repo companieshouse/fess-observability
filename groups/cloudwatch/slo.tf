@@ -1,4 +1,4 @@
-resource "awscc_applicationsignals_service_level_objective" "slo_latency" {
+resource "awscc_applicationsignals_service_level_objective" "service_slo" {
   for_each    = local.service_slos
   name        = "${each.key}"
 
@@ -20,7 +20,6 @@ resource "awscc_applicationsignals_service_level_objective" "slo_latency" {
 
   goal = {
     attainment_goal   = each.value.target
-    warning_threshold = 50
     interval = { rolling_interval = { duration = 30, duration_unit = "DAY" } }
   }
 
