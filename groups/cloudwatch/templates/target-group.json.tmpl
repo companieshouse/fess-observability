@@ -1,0 +1,172 @@
+{
+    "variables":  [
+        {
+            "type": "pattern",
+            "pattern": "VAR_TARGET_GROUP",
+            "inputType": "select",
+            "id": "TargetGroup",
+            "label": "target",
+            "visible": true,
+            "inputPopulationType": "search",
+            "search": "{AWS/ApplicationELB, LoadBalancer, TargetGroup} MetricName=\"RequestCount\"",
+            "populateFrom": "TargetGroup"
+        }
+    ],
+    "widgets": [
+        {
+            "type": "text",
+            "x": 0,
+            "y": 0,
+            "width": 24,
+            "height": 2,
+            "properties": {
+                "markdown": "# VAR_TARGET_GROUP - Service Reliability Dashboard",
+                "background": "transparent"
+            }
+        },
+        {
+            "type": "text",
+            "x": 0,
+            "y": 6,
+            "width": 24,
+            "height": 1,
+            "properties": {
+                "markdown": "## Golden Signals",
+                "background": "transparent"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 2,
+            "width": 5,
+            "height": 4,
+            "properties": {
+                "metrics": [
+                    [ { "expression": "((requests - errors) / requests) * 100", "label": "Availability (%)", "id": "math", "period": 300, "region": "eu-west-2" } ],
+                    [ { "expression": "SUM(SEARCH('{AWS/ApplicationELB,LoadBalancer,TargetGroup} MetricName=\"RequestCount\" TargetGroup=\"VAR_TARGET_GROUP\"','Sum',300))", "label": "Expression1", "id": "requests", "visible": false, "region": "eu-west-2" } ],
+                    [ { "expression": "SUM(SEARCH('{AWS/ApplicationELB,LoadBalancer,TargetGroup} MetricName=\"HTTPCode_Target_5XX_Count\" TargetGroup=\"VAR_TARGET_GROUP\"','Sum',300))", "label": "Expression1", "id": "errors", "visible": false, "region": "eu-west-2" } ]
+                ],
+                "sparkline": true,
+                "view": "singleValue",
+                "region": "eu-west-2",
+                "stat": "Sum",
+                "period": 300,
+                "title": "Availability (%)",
+                "singleValueFullPrecision": true,
+                "liveData": false,
+                "legend": {
+                    "position": "hidden"
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 5,
+            "y": 2,
+            "width": 5,
+            "height": 4,
+            "properties": {
+                "metrics": [
+                    [ { "expression": "(errors / requests) * 100", "label": "Errors / sec", "id": "math", "period": 300, "region": "eu-west-2" } ],
+                    [ { "expression": "SUM(SEARCH('{AWS/ApplicationELB,LoadBalancer,TargetGroup} MetricName=\"RequestCount\" TargetGroup=\"VAR_TARGET_GROUP\"','Sum',300))", "label": "Expression1", "id": "requests", "visible": false, "region": "eu-west-2" } ],
+                    [ { "expression": "SUM(SEARCH('{AWS/ApplicationELB,LoadBalancer,TargetGroup} MetricName=\"HTTPCode_Target_5XX_Count\" TargetGroup=\"VAR_TARGET_GROUP\"','Sum',300))", "label": "Expression1", "id": "errors", "visible": false, "region": "eu-west-2" } ]
+                ],
+                "sparkline": true,
+                "view": "singleValue",
+                "region": "eu-west-2",
+                "stat": "Sum",
+                "period": 300,
+                "title": "Error Rate",
+                "singleValueFullPrecision": true,
+                "liveData": false,
+                "legend": {
+                    "position": "hidden"
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 10,
+            "y": 2,
+            "width": 5,
+            "height": 4,
+            "properties": {
+                "metrics": [
+                    [ { "expression": "requests / PERIOD(requests)", "label": "req/s", "id": "rate", "region": "eu-west-2" } ],
+                    [ { "expression": "SUM(SEARCH('{AWS/ApplicationELB,LoadBalancer,TargetGroup} MetricName=\"RequestCount\" TargetGroup=\"VAR_TARGET_GROUP\"','Sum',300))", "label": "requests", "id": "requests", "region": "eu-west-2", "visible": false } ]
+                ],
+                "sparkline": true,
+                "view": "singleValue",
+                "region": "eu-west-2",
+                "stat": "Sum",
+                "period": 300,
+                "singleValueFullPrecision": false,
+                "setPeriodToTimeRange": false,
+                "liveData": false,
+                "title": "Request Rate (req/s)",
+                "legend": {
+                    "position": "hidden"
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 15,
+            "y": 2,
+            "width": 5,
+            "height": 4,
+            "properties": {
+                "metrics": [
+                    [ { "expression": "SUM(SEARCH('{AWS/ApplicationELB,LoadBalancer,TargetGroup} MetricName=\"TargetResponseTime\" TargetGroup=\"VAR_TARGET_GROUP\"','p95',300))", "label": "Expression1", "id": "e1" } ],
+                    [ "AWS/ApplicationELB", "TargetResponseTime", "TargetGroup", "targetgroup/live-your-companies-web-far/00eaa0560ff8bdfc", "LoadBalancer", "app/live-chs-chgovuk/38ed967576273f44", { "region": "eu-west-2", "id": "m1", "visible": false } ]
+                ],
+                "sparkline": true,
+                "view": "singleValue",
+                "region": "eu-west-2",
+                "stat": "p95",
+                "period": 300,
+                "title": "p95 Latency",
+                "legend": {
+                    "position": "hidden"
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 7,
+            "width": 10,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [ { "expression": "SELECT SUM(RequestCount)\nFROM SCHEMA(\"AWS/ApplicationELB\", LoadBalancer, TargetGroup)\nWHERE TargetGroup = 'VAR_TARGET_GROUP'", "label": "Requests", "id": "q1", "region": "eu-west-2" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "eu-west-2",
+                "stat": "Sum",
+                "period": 300,
+                "title": "Traffic - Request Count"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 10,
+            "y": 7,
+            "width": 10,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [ { "expression": "SELECT SUM(HTTPCode_Target_5XX_Count)\nFROM SCHEMA(\"AWS/ApplicationELB\", LoadBalancer, TargetGroup)\nWHERE TargetGroup = 'VAR_TARGET_GROUP'", "label": "", "id": "q1", "region": "eu-west-2" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "eu-west-2",
+                "stat": "Sum",
+                "period": 300,
+                "title": "Errors"
+            }
+        }
+    ] 
+}
